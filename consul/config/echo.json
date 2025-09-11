@@ -1,0 +1,12 @@
+{
+  "service": {
+    "name": "echo",
+    "address": "echo",
+    "port": 5678,
+    "check": {
+      "http": "http://echo:5678/",
+      "interval": "5s"
+    }
+  }
+}
+

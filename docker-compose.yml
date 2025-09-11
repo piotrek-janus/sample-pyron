@@ -1,0 +1,57 @@
+version: "3.8"
+
+name: pyron-consul-demo
+
+services:
+  consul:
+    image: hashicorp/consul:1.21
+    command:
+      - agent
+      - -dev
+      - -client=0.0.0.0
+      - -ui
+      - -log-level=INFO
+      - -config-dir=/consul/config
+      - -data-dir=/consul/data
+    volumes:
+      - ./consul/config:/consul/config
+      - ./consul/data:/consul/data
+    ports:
+      - "8501:8500"        # Consul UI/API
+      - "8600:8600/udp"    # DNS
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8500/v1/status/leader"]
+      interval: 5s
+      timeout: 2s
+      retries: 30
+    networks: [mesh]
+
+  echo:
+    image: hashicorp/http-echo:0.2.3
+    command: ["-text=hello from echo"]
+    ports:
+      - "5678:5678"
+    networks: [mesh]
+
+  pyron:
+    image: docker.cloudentity.io/api-gateway:1.48.0
+    depends_on:
+      consul:
+        condition: service_healthy
+      echo:
+        condition: service_started
+    ports:
+      - "8082:8080"
+    volumes:
+      - ./pyron/conf/:/configs/
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/alive"]
+      interval: 5s
+      timeout: 2s
+      retries: 30
+    networks: [mesh]
+
+networks:
+  mesh:
+    driver: bridge
+
