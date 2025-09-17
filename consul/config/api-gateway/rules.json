@@ -1,0 +1,20 @@
+{
+  "rules": [
+    {
+      "endpoints": [
+        {
+          "method": "GET",
+          "pathPattern": "/echo",
+          "dropPrefix": true,
+          "targetService": "echo"
+        },
+        {
+          "method": "GET",
+          "pathPattern": "/aliases/echo",
+          "dropPrefix": true,
+          "targetService": "echo"
+        }
+      ]
+    }
+  ]
+}
