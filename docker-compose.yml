@@ -10,7 +10,7 @@ services:
       - -dev
       - -client=0.0.0.0
       - -ui
-      - -log-level=INFO
+      - -log-level=TRACE
       - -config-dir=/consul/config
       - -data-dir=/consul/data
     volumes:
@@ -24,6 +24,20 @@ services:
       interval: 5s
       timeout: 2s
       retries: 30
+    networks: [mesh]
+
+  consul-kv-seed:
+    image: hashicorp/consul:1.18  
+    depends_on:
+      consul:
+        condition: service_healthy
+    volumes:
+      - ./consul/config/api-gateway:/seed:ro
+    entrypoint:
+      - sh
+      - -c
+      - |
+        consul kv put -http-addr=http://consul:8500 api-gateway/rules @/seed/rules.json
     networks: [mesh]
 
   echo:

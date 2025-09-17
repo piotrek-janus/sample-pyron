@@ -1,19 +1,22 @@
 {
-  "scanPeriod": 5000,
-  "stores": [
-    {
-      "type": "file",
-      "format": "json",
-      "config": {
-        "path": "/configs/config.json"
-      }
-    },
-    {
-      "type": "file",
-      "format": "json",
-      "config": {
-        "path": "/configs/rules.json"
-      }
-    }
-  ]
+    "scanPeriod": 5000,
+    "stores": [
+        {
+            "type": "file",
+            "format": "json",
+            "config": {
+                "path": "/configs/config.json"
+            }
+        },
+        {
+            "type": "consul-json",
+            "format": "json",
+            "config": {
+                "host": "consul",
+                "port": 8500,
+                "ssl": false,
+                "path": "api-gateway/rules"
+            }
+        }
+    ]
 }
