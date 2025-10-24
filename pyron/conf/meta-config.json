@@ -12,10 +12,11 @@
             "type": "consul-json",
             "format": "json",
             "config": {
-                "host": "consul",
+                "host": "consul-agent",
                 "port": 8500,
                 "ssl": false,
-                "path": "api-gateway/rules"
+                "path": "api-gateway",
+                "dc": "otherdc"
             }
         }
     ]

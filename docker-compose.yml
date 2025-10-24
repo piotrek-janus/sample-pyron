@@ -3,19 +3,21 @@ version: "3.8"
 name: pyron-consul-demo
 
 services:
-  consul:
-    image: hashicorp/consul:1.21
+  consul-server:
+    image: hashicorp/consul:1.21.2
     command:
       - agent
-      - -dev
+      - -server
+      - -bootstrap-expect=1
       - -client=0.0.0.0
       - -ui
       - -log-level=TRACE
       - -config-dir=/consul/config
       - -data-dir=/consul/data
+      - -bind=0.0.0.0
+      - -datacenter=otherdc
     volumes:
       - ./consul/config:/consul/config
-      - ./consul/data:/consul/data
     ports:
       - "8501:8500"        # Consul UI/API
       - "8600:8600/udp"    # DNS
@@ -23,13 +25,32 @@ services:
       test: ["CMD", "wget", "-qO-", "http://localhost:8500/v1/status/leader"]
       interval: 5s
       timeout: 2s
-      retries: 30
+      retries: 6
+    networks: [mesh]
+
+  consul-agent:
+    image: hashicorp/consul:1.21.2
+    command:
+      - agent
+      - -retry-join=consul-server
+      - -client=0.0.0.0
+      - -log-level=TRACE
+      - -bind=0.0.0.0
+      - -datacenter=otherdc
+    depends_on:
+      consul-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8500/v1/agent/members"]
+      interval: 5s
+      timeout: 2s
+      retries: 6
     networks: [mesh]
 
   consul-kv-seed:
-    image: hashicorp/consul:1.18  
+    image: hashicorp/consul:1.21.2
     depends_on:
-      consul:
+      consul-server:
         condition: service_healthy
     volumes:
       - ./consul/config/api-gateway:/seed:ro
@@ -37,7 +58,7 @@ services:
       - sh
       - -c
       - |
-        consul kv put -http-addr=http://consul:8500 api-gateway/rules @/seed/rules.json
+        consul kv put -http-addr=http://consul-server:8500 api-gateway/rules @/seed/rules.json
     networks: [mesh]
 
   echo:
@@ -50,10 +71,12 @@ services:
   pyron:
     image: docker.cloudentity.io/api-gateway:1.48.0
     depends_on:
-      consul:
+      consul-agent:
         condition: service_healthy
       echo:
         condition: service_started
+      consul-kv-seed:
+        condition: service_completed_successfully
     ports:
       - "8082:8080"
     volumes:
@@ -62,7 +85,7 @@ services:
       test: ["CMD", "wget", "-qO-", "http://localhost:8080/alive"]
       interval: 5s
       timeout: 2s
-      retries: 30
+      retries: 6
     networks: [mesh]
 
 networks:
